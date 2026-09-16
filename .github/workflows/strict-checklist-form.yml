@@ -1,4 +1,4 @@
-name: Strict checklist form sync
+name: Canonical regulation sync
 
 on:
   push:
@@ -13,68 +13,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Apply canonical checklist order and hints
+      - name: Replace regulation with canonical source
         shell: bash
         run: |
-          cat > /tmp/patch.py <<'PY'
+          echo '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' | base64 -d | gzip -d > hiring-regulations.md
+          python - <<'PY'
           from pathlib import Path
-          import re
-          p = Path('index.html')
-          s = p.read_text(encoding='utf-8')
-          s = s.replace('<title>Собеседования мастеров НРИ — Чертоги Героев</title>', '<title>Собеседование мастера НРИ в клуб ЧГ</title>')
-          s = s.replace('<h1>Собеседования мастеров НРИ — Чертоги Героев</h1>', '<h1>Собеседование мастера НРИ в клуб ЧГ</h1>')
-          section1 = (
-              '<section class="card"><h2>1. Доступность</h2>'
-              '<h3>Откуда добирается</h3>'
-              '<div class="grid">'
-              '<div><label class="block">Район / метро</label><input name="area" type="text" placeholder="Например: м. Петроградская / район" title="Откуда кандидат обычно будет добираться до клуба"></div>'
-              '<div><label class="block">Дорога до клуба</label><select name="commute"><option value="">— выберите —</option><option>до 30 минут</option><option>30–45 минут</option><option>45–60 минут</option><option>больше часа</option></select></div>'
-              '<div><label class="block">Регулярно ездить</label><select name="commute_ok"><option value="">— выберите —</option><option>комфортно</option><option>допустимо</option><option>потенциальная проблема</option></select></div>'
-              '</div>'
-              '<h3>Основная занятость</h3>'
-              '<div class="grid">'
-              '<div><label class="block">Занятость</label><select name="employment"><option value="">— выберите —</option><option>постоянная работа</option><option>временная / проектная работа</option><option>фриланс / самозанятость</option><option>учёба</option><option>работа + учёба</option><option>сейчас не работает</option><option>мастер НРИ</option><option>другое</option></select></div>'
-              '<div><label class="block">Другое</label><input name="employment_other" type="text" placeholder="Если выбрано «другое»"></div>'
-              '<div><label class="block">График основной занятости</label><select name="work_schedule"><option value="">— выберите —</option><option>стандартный 5/2</option><option>сменный</option><option>гибкий</option><option>плавающий / меняется каждую неделю</option><option>свободный</option><option>другое</option></select></div>'
-              '<div><label class="block">Другой график</label><input name="work_schedule_other" type="text" placeholder="Если выбрано «другое»"></div>'
-              '</div>'
-              '<h3>Важные особенности работы или места жительства</h3>'
-              '<textarea name="work_location_notes" placeholder="Например: удалёнка, смены, поздно заканчивает работу, далеко ехать после смены" title="Факторы работы или места жительства, которые могут влиять на регулярность"></textarea>'
-              '<h3>Когда может водить в клубе</h3>'
-              '<label class="block">Дни</label><div class="choices" data-multi="days"></div>'
-              '<label class="block" style="margin-top:12px">Время</label><div class="choices" data-multi="time"></div>'
-              '<h3>Насколько заранее известен график ведения?</h3>'
-              '<select name="schedule_notice"><option value="">— выберите —</option><option>месяц и более</option><option>2–4 недели</option><option>примерно за неделю</option><option>становится известен за несколько дней</option><option>сильно меняется / сложно прогнозировать</option></select>'
-              '<label class="block" style="margin-top:14px">Может стабильно заранее бронировать игровые слоты</label>'
-              '<select name="stable_booking"><option value="">— выберите —</option><option>да</option><option>в большинстве случаев</option><option>зависит от графика</option><option>скорее нет</option></select>'
-              '<label class="block" style="margin-top:14px">Ограничения / важные детали</label>'
-              '<input name="availability_details" type="text" placeholder="Например: не может по средам; нужен фиксированный график" title="Короткие ограничения по расписанию">'
-              '<h3>Планируемая регулярность ведения</h3>'
-              '<select name="frequency"><option value="">— выберите —</option><option>1–2 игры в месяц</option><option>1 игра в неделю</option><option>2 игры в неделю</option><option>3+ игр в неделю</option><option>зависит от загрузки</option></select>'
-              '<label class="block" style="margin-top:14px">Комфортная нагрузка</label>'
-              '<input name="comfortable_load" type="text" placeholder="Например: 1–2 игры в неделю" title="Сколько игр кандидат реально считает комфортной нагрузкой">'
-              '<h3>Важные особенности ведения в клубе</h3>'
-              '<textarea name="club_availability_notes" placeholder="Например: предпочитает дневные игры, готов фиксировать слоты на месяц вперёд" title="Любые организационные особенности, которые важно помнить"></textarea>'
-              '</section>'
-          )
-          s, n = re.subn(r'<section class="card"><h2>1\. Доступность</h2>.*?</section>\s*<section class="card"><h2>2\. Опыт в НРИ</h2>', section1 + '<section class="card"><h2>2. Опыт в НРИ</h2>', s, count=1, flags=re.S)
-          if n != 1:
-              raise SystemExit(f'Availability replacement failed: {n}')
-          s = s.replace('<div><label class="block">Основная занятость</label><select name="employment">', '<div><label class="block">Основная занятость</label><select name="employment">')
-          s = s.replace('<h3>Жанры</h3><div class="choices" data-multi="genres"></div><h3>Формат</h3>', '<h3>Жанры</h3><div class="choices" data-multi="genres"></div><label class="block" style="margin-top:12px">Другой жанр</label><input name="genre_other" type="text" placeholder="Если выбрано «другое»"><h3>Формат</h3>')
-          s = s.replace('<h3>Свои приключения или готовые модули?</h3><div class="choices" data-multi="sources"></div><label class="block" style="margin-top:14px">Что готов поставить', '<h3>Свои приключения или готовые модули?</h3><div class="choices" data-multi="sources"></div><label class="block" style="margin-top:12px">Другое</label><input name="source_other" type="text" placeholder="Если выбрано «другое»"><label class="block" style="margin-top:14px">Что готов поставить')
-          s = re.sub(r",checks:\[[^\]]*\]", '', s, count=1)
-          s = s.replace("line('Занятость',d.employment),line('График работы',d.work_schedule)", "line('Занятость',d.employment),line('Другая занятость',d.employment_other),line('График работы',d.work_schedule),line('Другой график',d.work_schedule_other)")
-          if "line('Важные особенности работы / места жительства',d.work_location_notes)" not in s:
-              s = s.replace("line('Комфортная нагрузка',d.comfortable_load),line('Ограничения / детали',d.availability_details)", "line('Важные особенности работы / места жительства',d.work_location_notes),line('Комфортная нагрузка',d.comfortable_load),line('Ограничения / детали',d.availability_details)")
-          s = s.replace("line('Жанры',d.genres),line('Формат',d.formats),line('Приключения',d.sources)", "line('Жанры',d.genres),line('Другой жанр',d.genre_other),line('Формат',d.formats),line('Приключения',d.sources),line('Другое',d.source_other)")
-          p.write_text(s, encoding='utf-8')
+          p=Path('index.html')
+          s=p.read_text(encoding='utf-8')
+          s=s.replace('<label class="block">Имя кандидата</label>','<label class="block">Кандидат</label>',1)
+          p.write_text(s,encoding='utf-8')
           PY
-          python /tmp/patch.py
-      - name: Commit strict form
+      - name: Commit canonical regulation
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          git commit -m "Make site strictly follow interview checklist [skip ci]"
+          git add index.html hiring-regulations.md
+          git commit -m "Use canonical checklist and regulation text [skip ci]"
           git push
