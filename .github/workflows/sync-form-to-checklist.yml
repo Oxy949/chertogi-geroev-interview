@@ -1,0 +1,101 @@
+name: Sync form to checklist
+
+on:
+  push:
+    paths:
+      - .github/workflows/sync-form-to-checklist.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch form and regulation
+        shell: bash
+        run: |
+          cat > /tmp/patch.py <<'PY'
+          from pathlib import Path
+          import re
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          # Visible helper styling.
+          if '.fieldhint{' not in s:
+              s = s.replace('.hidden{display:none}', '.fieldhint{font-size:12px;color:var(--muted);margin-top:5px}.hidden{display:none}')
+
+          # Candidate fields: hints/placeholders.
+          s = s.replace('<input name="candidate" type="text">', '<input name="candidate" type="text" placeholder="Имя и фамилия или привычное имя" title="Как подписать кандидата в списке">')
+          s = s.replace('<input name="interviewer" type="text">', '<input name="interviewer" type="text" placeholder="Кто проводит собеседование" title="Имя собеседующего">')
+          s = s.replace('<input name="area" type="text">', '<input name="area" type="text" placeholder="Например: м. Петроградская / район" title="Откуда кандидат обычно будет добираться до клуба">')
+
+          # Select placeholders and exact wording from checklist.
+          s = s.replace('<option></option>', '<option value="">— выберите —</option>')
+          s = s.replace('<option>за несколько дней</option>', '<option>становится известен за несколько дней</option>')
+
+          # Split work/life details, restrictions, regularity and club details exactly as checklist.
+          old = '<div class="grid" style="margin-top:14px"><div><label class="block">Комфортная нагрузка</label><input name="comfortable_load" type="text"></div><div><label class="block">Важные особенности работы или места жительства</label><textarea name="work_location_notes"></textarea></div></div><label class="block" style="margin-top:12px">Ограничения / важные особенности ведения в клубе</label><textarea name="club_availability_notes"></textarea>'
+          new = '<label class="block" style="margin-top:14px">Важные особенности работы или места жительства</label><textarea name="work_location_notes" placeholder="Например: удалёнка, смены, поздно заканчивает работу, далеко ехать после смены" title="Факторы работы или места жительства, которые могут влиять на регулярность"></textarea><label class="block" style="margin-top:12px">Ограничения / важные детали</label><input name="availability_details" type="text" placeholder="Например: не может по средам; нужен фиксированный график" title="Короткие ограничения по расписанию"><div class="grid" style="margin-top:14px"><div><label class="block">Комфортная нагрузка</label><input name="comfortable_load" type="text" placeholder="Например: 1–2 игры в неделю" title="Сколько игр кандидат реально считает комфортной нагрузкой"></div></div><label class="block" style="margin-top:12px">Важные особенности ведения в клубе</label><textarea name="club_availability_notes" placeholder="Например: предпочитает дневные игры, готов фиксировать слоты на месяц вперёд" title="Любые организационные особенности, которые важно помнить"></textarea>'
+          if old not in s:
+              raise SystemExit('availability block not found')
+          s = s.replace(old, new, 1)
+
+          # Experience hints; remove assistant-added note not present in checklist.
+          s = s.replace('<input name="plays_since" type="text">', '<input name="plays_since" type="text" placeholder="Например: 6 лет / с 2019 года" title="Сколько времени кандидат играет в НРИ">')
+          s = s.replace('<input name="gms_since" type="text">', '<input name="gms_since" type="text" placeholder="Например: 3 года" title="Сколько времени кандидат ведёт НРИ">')
+          s = s.replace('<textarea name="experience_notes"></textarea><div class="note">Коммерческий опыт не обязателен. Для клуба важнее опыт работы с незнакомыми игроками и новичками.</div>', '<textarea name="experience_notes" placeholder="Например: много водил друзьям, впервые идёт в коммерческий клуб, хорошо работает с новичками" title="Важные детали опыта, не отражённые готовыми вариантами"></textarea>')
+
+          # Systems: exact checklist options and hints.
+          s = s.replace("'своя собственная система'", "'своя собственная система (редфлаг?)','другое'")
+          s = s.replace('<input name="main_system" type="text">', '<input name="main_system" type="text" placeholder="Например: D&D 5e" title="Система, которую кандидат считает основной">')
+          s = s.replace('<input name="confident_systems" type="text">', '<input name="confident_systems" type="text" placeholder="Что может уверенно поставить в расписание" title="Системы, правила которых кандидат знает достаточно для уверенного ведения">')
+          s = s.replace('<input name="learn_systems" type="text">', '<input name="learn_systems" type="text" placeholder="Что хочет начать водить или изучить" title="Системы, которые пока не относятся к уверенному опыту">')
+          s = s.replace('<input name="other_system" type="text">', '<input name="other_system" type="text" placeholder="Если выбрано «другое»" title="Название другой системы">')
+          s = s.replace('<textarea name="systems_notes"></textarea>', '<textarea name="systems_notes" placeholder="Например: уверенно ведёт, но часто сверяется с правилами; собственная система — основной опыт" title="Особенности владения системами"></textarea>')
+
+          # Preferences: add explicit 'другое' variants and hints.
+          s = s.replace("'историческое']", "'историческое','другое']")
+          s = s.replace("sources:['официальные модули','готовые приключения','собственные приключения']", "sources:['официальные модули','готовые приключения','собственные приключения','другое']")
+          s = s.replace('<h3>Свои приключения или готовые модули</h3>', '<h3>Свои приключения или готовые модули?</h3>')
+          s = s.replace('<textarea name="ready_to_schedule"></textarea>', '<textarea name="ready_to_schedule" placeholder="Например: D&D 5e, ваншот, тёмное фэнтези; готов провести уже на следующей неделе" title="Конкретные игры, которые кандидат реально готов поставить сейчас"></textarea>')
+          s = s.replace('<textarea name="motivation"></textarea>', '<textarea name="motivation" placeholder="Например: хочет регулярную аудиторию, больше практики, команду мастеров, дополнительный доход" title="Мотивация кандидата работать именно в клубе"></textarea>')
+
+          # Strict checklist: free-text field instead of assistant-generated checklist.
+          old_checks = '<h3>Что проверить на смотринах</h3><div class="choices" data-multi="checks"></div><label class="block" style="margin-top:12px">Комментарий</label><textarea name="checks_notes"></textarea>'
+          new_checks = '<h3>Что проверить на смотринах</h3><textarea name="checks_notes" placeholder="Например: тайминг, работа с новичками, уверенность в правилах, распределение спотлайта" title="Запиши только то, что действительно нужно проверить у этого кандидата"></textarea>'
+          if old_checks not in s:
+              raise SystemExit('checks block not found')
+          s = s.replace(old_checks, new_checks, 1)
+          s = s.replace('<textarea name="key_notes"></textarea>', '<textarea name="key_notes" placeholder="Коротко: сильные стороны, риски и важные договорённости" title="Итоговые заметки по кандидату"></textarea>')
+
+          # Summary mirrors checklist fields.
+          s = s.replace("line('Особенности',d.club_availability_notes)", "line('Ограничения / детали',d.availability_details),line('Важные особенности ведения',d.club_availability_notes)")
+          s = s.replace("line('Проверить',d.checks),line('Комментарий',d.checks_notes)", "line('Что проверить на смотринах',d.checks_notes)")
+
+          # Backward compatibility for previously saved candidates that used checkbox 'checks'.
+          old_restore = "function restore(d){form.reset();for(const[k,v]of Object.entries(d||{}))"
+          new_restore = "function restore(d){form.reset();d={...(d||{})};if(d.checks&&!d.checks_notes)d.checks_notes=Array.isArray(d.checks)?d.checks.join(', '):d.checks;for(const[k,v]of Object.entries(d))"
+          if old_restore in s:
+              s = s.replace(old_restore, new_restore, 1)
+
+          p.write_text(s, encoding='utf-8')
+
+          # Regulation must also contain the 'Что рассказать кандидату / О клубе' section from checklist.
+          rp = Path('hiring-regulations.md')
+          r = rp.read_text(encoding='utf-8')
+          intro = '''# Что рассказать кандидату\n\n## О клубе\n\nМы камерный клуб и ищем мастеров для регулярной работы.\n\nНам важны не только непосредственно игровые навыки, но и:\n\n- ответственность;\n- пунктуальность;\n- работа с новичками;\n- соблюдение тайминга;\n- способность работать внутри команды;\n- желание развиваться.\n\nСмотрины нужны не для поиска идеального мастера и не для стресс-теста. Мы хотим увидеть реальную игру и понять, насколько мы подходим друг другу.\n\n---\n\n'''
+          if not r.startswith('# Что рассказать кандидату'):
+              r = intro + r
+          rp.write_text(r, encoding='utf-8')
+          PY
+          python /tmp/patch.py
+      - name: Commit synced form
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html hiring-regulations.md
+          git commit -m "Sync interview form with canonical checklist [skip ci]"
+          git push
