@@ -67,4 +67,52 @@ loadRegulation();
 const opts={days:['Пн','Вт','Ср','Чт','Пт','Сб','Вс'],time:['будни днём','будни вечером','выходные днём','выходные вечером','график гибкий'],experience:['ваншоты','мини-кампании','длительные кампании','открытые игры','сборные столы','игры с незнакомыми игроками','игры для новичков','клубные / коммерческие игры'],audience:['друзья','есть постоянная группа','есть отдельные постоянные игроки','постоянников нет','может привести игроков в клуб'],systems:['D&D 5e','D&D 2024','Pathfinder','Call of Cthulhu','VtM / World of Darkness','Daggerheart','Cyberpunk','Warhammer','Blades in the Dark','OSR','PbtA / FitD','своя собственная система (редфлаг?)','другое'],genres:['классическое фэнтези','тёмное фэнтези','хоррор','мистика','детектив','драма','комедия','экшен / приключение','научная фантастика','киберпанк','постапокалипсис','историческое','другое'],formats:['ваншоты','мини-кампании','кампании'],sources:['официальные модули','готовые приключения','собственные приключения','другое']};for(const[k,v]of Object.entries(opts)){const r=document.querySelector(`[data-multi="${k}"]`);v.forEach(x=>r.insertAdjacentHTML('beforeend',`<label class="choice"><input type="checkbox" name="${k}" value="${x}"> ${x}</label>`))}
 const form=document.getElementById('form'),DRAFT='chg_interview_draft_v3',STORE='chg_interview_candidates_v3';let currentId=null;if(!form.date.value)form.date.value=new Date().toISOString().slice(0,10);function data(){const o={};new FormData(form).forEach((v,k)=>o[k]===undefined?o[k]=v:Array.isArray(o[k])?o[k].push(v):o[k]=[o[k],v]);return o}function restore(d){form.reset();d={...(d||{})};if(d.checks&&!d.checks_notes)d.checks_notes=Array.isArray(d.checks)?d.checks.join(', '):d.checks;for(const[k,v]of Object.entries(d)){const es=form.querySelectorAll(`[name="${CSS.escape(k)}"]`),vals=Array.isArray(v)?v:[v];es.forEach(e=>e.type==='checkbox'?e.checked=vals.includes(e.value):e.value=vals[0]||'')}if(!form.date.value)form.date.value=new Date().toISOString().slice(0,10);update()}function line(k,v){return(!v||(Array.isArray(v)&&!v.length))?'':`${k}: ${Array.isArray(v)?v.join(', '):v}`}function summary(){const d=data(),p=[];p.push(`# ${d.candidate||'Кандидат не указан'}`, [line('Дата',d.date),line('Собеседующий',d.interviewer)].filter(Boolean).join(' | '),'\nДОСТУПНОСТЬ',line('Район / метро',d.area),line('Дорога',d.commute),line('Регулярно ездить',d.commute_ok),line('Занятость',d.employment),line('Другая занятость',d.employment_other),line('График работы',d.work_schedule),line('Другой график',d.work_schedule_other),line('Дни',d.days),line('Время',d.time),line('График известен',d.schedule_notice),line('Бронирование слотов',d.stable_booking),line('Регулярность',d.frequency),line('Важные особенности работы / места жительства',d.work_location_notes),line('Комфортная нагрузка',d.comfortable_load),line('Ограничения / детали',d.availability_details),line('Важные особенности ведения',d.club_availability_notes),'\nОПЫТ',line('Играет',d.plays_since),line('Ведёт',d.gms_since),line('Сейчас водит',d.gm_current),line('Опыт',d.experience),line('Аудитория',d.audience),line('Особенности',d.experience_notes),'\nСИСТЕМЫ',line('Водил',d.systems),line('Основная',d.main_system),line('Уверенно ведёт',d.confident_systems),line('Хотел бы освоить',d.learn_systems),line('Особенности',d.systems_notes),'\nПРЕДПОЧТЕНИЯ',line('Жанры',d.genres),line('Другой жанр',d.genre_other),line('Формат',d.formats),line('Приключения',d.sources),line('Другое',d.source_other),line('Готов поставить сейчас',d.ready_to_schedule),line('Мотивация',d.motivation),'\nИТОГ',line('Организационно',d.rating_org),line('Опыт',d.rating_experience),line('Система',d.rating_system),line('Новички',d.rating_newbies),line('Контакт',d.rating_contact),line('Самопрезентация',d.rating_presentation),line('Что проверить на смотринах',d.checks_notes),line('Решение',d.decision),line('Заметки',d.key_notes));return p.filter(Boolean).join('\n')}function update(){localStorage.setItem(DRAFT,JSON.stringify({id:currentId,data:data()}));summaryEl.textContent=summary();status.textContent='Черновик сохранён локально: '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}const summaryEl=document.getElementById('summary'),status=document.getElementById('status');form.addEventListener('input',update);form.addEventListener('change',update);function load(){try{return JSON.parse(localStorage.getItem(STORE)||'[]')}catch{return[]}}function put(a){localStorage.setItem(STORE,JSON.stringify(a));render()}function saveCandidate(){const d=data();if(!d.candidate.trim())return alert('Укажите имя кандидата.');let a=load(),now=new Date().toISOString();if(currentId){const i=a.findIndex(x=>x.id===currentId);if(i>=0)a[i]={...a[i],data:d,updatedAt:now};else a.unshift({id:currentId,data:d,createdAt:now,updatedAt:now})}else{currentId=crypto.randomUUID?crypto.randomUUID():String(Date.now());a.unshift({id:currentId,data:d,createdAt:now,updatedAt:now})}put(a);update();alert('Кандидат сохранён.')}function newInterview(){if(!confirm('Начать новую анкету?'))return;currentId=null;form.reset();form.date.value=new Date().toISOString().slice(0,10);update();tab('interview')}function openCandidate(id){const x=load().find(x=>x.id===id);if(x){currentId=id;restore(x.data);tab('interview')}}function del(id){const x=load().find(x=>x.id===id);if(x&&confirm(`Удалить «${x.data.candidate||'Без имени'}»?`))put(load().filter(y=>y.id!==id))}function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}function render(){const q=search.value.toLowerCase(),a=load().filter(x=>JSON.stringify(x.data).toLowerCase().includes(q));count.textContent=`(${load().length})`;candidateList.innerHTML=a.length?a.map(x=>`<div class="candidate"><div><strong>${esc(x.data.candidate||'Без имени')}</strong><div class="meta">${esc([x.data.date,x.data.main_system,x.data.decision].filter(Boolean).join(' · '))}</div></div><div class="row"><button onclick="openCandidate('${x.id}')">Открыть</button><button class="danger" onclick="del('${x.id}')">Удалить</button></div></div>`).join(''):'<div class="small" style="padding:18px 0">Ничего не найдено.</div>'}search.addEventListener('input',render);async function copySummary(){try{await navigator.clipboard.writeText(summary());alert('Сводка скопирована.')}catch{prompt('Скопируйте сводку:',summary())}}function dl(obj,name){const b=new Blob([JSON.stringify(obj,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;a.click()}function downloadOne(){const d=data();dl({format:'chg-interview-v3',data:d},`interview_${(d.candidate||'candidate').replace(/[^\wа-яА-ЯёЁ-]+/g,'_')}.json`)}function exportAll(){dl({format:'chg-candidates-v3',items:load()},`chertogi-geroev_candidates_${new Date().toISOString().slice(0,10)}.json`)}oneImport.onchange=async e=>{try{const o=JSON.parse(await e.target.files[0].text());currentId=null;restore(o.data||o);tab('interview')}catch{alert('Не удалось прочитать JSON.')}e.target.value=''};allImport.onchange=async e=>{try{const o=JSON.parse(await e.target.files[0].text()),m=new Map(load().map(x=>[x.id,x]));(o.items||[]).forEach(x=>x&&x.id&&x.data&&m.set(x.id,x));put([...m.values()])}catch{alert('Не удалось импортировать список.')}e.target.value=''};function tab(n){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===n));document.getElementById('view-'+n).classList.add('active');formToolbar.style.display=n==='interview'?'flex':'none';if(n==='candidates')render();scrollTo({top:0,behavior:'smooth'})}document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>tab(b.dataset.tab));try{const d=JSON.parse(localStorage.getItem(DRAFT)||'null');if(d){currentId=d.id||null;restore(d.data||{})}}catch{}update();render();
 </script>
+<!-- conditional-other-fields -->
+<script>
+(()=>{
+  const form=document.getElementById('form');
+  if(!form)return;
+  const bindings=[
+    ['employment','employment_other'],
+    ['work_schedule','work_schedule_other'],
+    ['systems','other_system'],
+    ['genres','genre_other'],
+    ['sources','source_other']
+  ];
+  const items=[];
+  for(const [control,target] of bindings){
+    const input=form.elements[target];
+    if(!input)continue;
+    let holder=input.parentElement;
+    if(!(holder && holder.tagName==='DIV' && holder.querySelector(':scope > label'))){
+      const label=input.previousElementSibling?.tagName==='LABEL' ? input.previousElementSibling : null;
+      if(label){
+        holder=document.createElement('div');
+        holder.className='conditional-other';
+        label.parentNode.insertBefore(holder,label);
+        holder.append(label,input);
+      }else{
+        holder=input;
+      }
+    }
+    items.push({control,input,holder});
+  }
+  function isOtherSelected(name){
+    return [...form.querySelectorAll(`[name="${name}"]`)].some(el=>
+      el.tagName==='SELECT' ? el.value==='другое' : el.checked && el.value==='другое'
+    );
+  }
+  function syncOtherFields(){
+    for(const {control,input,holder} of items){
+      const show=isOtherSelected(control);
+      holder.hidden=!show;
+      input.disabled=!show;
+    }
+  }
+  form.addEventListener('change',syncOtherFields);
+  document.addEventListener('click',()=>setTimeout(syncOtherFields,0));
+  document.addEventListener('change',()=>setTimeout(syncOtherFields,0));
+  syncOtherFields();
+})();
+</script>
 </body></html>
