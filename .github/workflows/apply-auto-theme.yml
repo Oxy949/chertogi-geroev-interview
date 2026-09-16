@@ -18,32 +18,14 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-
           p = Path('index.html')
           s = p.read_text(encoding='utf-8')
-
-          s = s.replace(
-              '<meta name="theme-color" content="#34445a">',
-              '<meta name="color-scheme" content="light dark">\n'
-              '<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f5f7">\n'
-              '<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121416">'
-          )
-
-          dark_css = '''\n@media (prefers-color-scheme: dark){
-  :root{color-scheme:dark;--bg:#121416;--card:#1a1d20;--text:#edf0f2;--muted:#a2a8af;--line:#34383d;--accent:#9fb1c5;--soft:#22272c;--danger:#e0a0a0}
-  header{background:rgba(18,20,22,.96)}
-  input[type=text],input[type=date],select,textarea{background:#16191d;color:var(--text);border-color:var(--line)}
-  .choice{background:#16191d}
-  .primary,.tab.active{color:#121416}
-  select{color-scheme:dark}
-}\n'''
-
+          s = s.replace('<meta name="theme-color" content="#34445a">', '<meta name="color-scheme" content="light dark">\n<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f5f7">\n<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#121416">')
+          dark_css = "\n@media (prefers-color-scheme: dark){\n  :root{color-scheme:dark;--bg:#121416;--card:#1a1d20;--text:#edf0f2;--muted:#a2a8af;--line:#34383d;--accent:#9fb1c5;--soft:#22272c;--danger:#e0a0a0}\n  header{background:rgba(18,20,22,.96)}\n  input[type=text],input[type=date],select,textarea{background:#16191d;color:var(--text);border-color:var(--line)}\n  .choice{background:#16191d}\n  .primary,.tab.active{color:#121416}\n  select{color-scheme:dark}\n}\n"
           if '@media (prefers-color-scheme: dark)' not in s:
               s = s.replace('</style>', dark_css + '</style>', 1)
-
           p.write_text(s, encoding='utf-8')
           PY
-
       - name: Commit theme update
         run: |
           git config user.name "github-actions[bot]"
