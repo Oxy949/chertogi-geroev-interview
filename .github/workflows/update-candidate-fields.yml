@@ -22,3 +22,5 @@ jobs:
           git add index.html
           git commit -m "Update candidate fields and systems [skip ci]"
           git push
+
+# trigger
