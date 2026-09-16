@@ -1,0 +1,82 @@
+name: Conditional other fields
+
+on:
+  push:
+    paths:
+      - .github/workflows/conditional-other-fields.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add conditional Other fields
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          marker = '<!-- conditional-other-fields -->'
+          if marker not in s:
+              script = r'''<!-- conditional-other-fields -->
+<script>
+(()=>{
+  const form=document.getElementById('form');
+  if(!form)return;
+  const bindings=[
+    ['employment','employment_other'],
+    ['work_schedule','work_schedule_other'],
+    ['systems','other_system'],
+    ['genres','genre_other'],
+    ['sources','source_other']
+  ];
+  const items=[];
+  for(const [control,target] of bindings){
+    const input=form.elements[target];
+    if(!input)continue;
+    let holder=input.parentElement;
+    if(!(holder && holder.tagName==='DIV' && holder.querySelector(':scope > label'))){
+      const label=input.previousElementSibling?.tagName==='LABEL' ? input.previousElementSibling : null;
+      if(label){
+        holder=document.createElement('div');
+        holder.className='conditional-other';
+        label.parentNode.insertBefore(holder,label);
+        holder.append(label,input);
+      }else{
+        holder=input;
+      }
+    }
+    items.push({control,input,holder});
+  }
+  function isOtherSelected(name){
+    return [...form.querySelectorAll(`[name="${name}"]`)].some(el=>
+      el.tagName==='SELECT' ? el.value==='другое' : el.checked && el.value==='другое'
+    );
+  }
+  function syncOtherFields(){
+    for(const {control,input,holder} of items){
+      const show=isOtherSelected(control);
+      holder.hidden=!show;
+      input.disabled=!show;
+    }
+  }
+  form.addEventListener('change',syncOtherFields);
+  document.addEventListener('click',()=>setTimeout(syncOtherFields,0));
+  document.addEventListener('change',()=>setTimeout(syncOtherFields,0));
+  syncOtherFields();
+})();
+</script>'''
+              s = s.replace('</body>', script + '\n</body>', 1)
+              p.write_text(s, encoding='utf-8')
+          PY
+      - name: Commit change
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Show Other fields conditionally [skip ci]"
+          git push
