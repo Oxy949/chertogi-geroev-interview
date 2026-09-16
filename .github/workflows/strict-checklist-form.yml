@@ -13,52 +13,62 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Rebuild interview sections to canonical order
+      - name: Apply canonical checklist order and hints
         shell: bash
         run: |
           cat > /tmp/patch.py <<'PY'
           from pathlib import Path
           import re
-
-          p=Path('index.html')
-          s=p.read_text(encoding='utf-8')
-
-          s=s.replace('<title>Собеседования мастеров НРИ — Чертоги Героев</title>','<title>Собеседование мастера НРИ в клуб ЧГ</title>')
-          s=s.replace('<h1>Собеседования мастеров НРИ — Чертоги Героев</h1>','<h1>Собеседование мастера НРИ в клуб ЧГ</h1>')
-
-          sections=r'''<section class="card"><h2>Кандидат</h2><div class="grid3"><div><label class="block">Кандидат</label><input name="candidate" type="text" placeholder="Имя и фамилия или привычное имя" title="Как подписать кандидата в списке"></div><div><label class="block">Дата</label><input name="date" type="date" title="Дата собеседования"></div><div><label class="block">Собеседующий</label><input name="interviewer" type="text" placeholder="Кто проводит собеседование" title="Имя собеседующего"></div></div></section>
-<section class="card"><h2>1. Доступность</h2>
-<h3>Откуда добирается</h3>
-<div class="grid"><div><label class="block">Район / метро</label><input name="area" type="text" placeholder="Например: м. Петроградская / район" title="Откуда кандидат обычно будет добираться до клуба"></div><div><label class="block">Дорога до клуба</label><select name="commute"><option value="">— выберите —</option><option>до 30 минут</option><option>30–45 минут</option><option>45–60 минут</option><option>больше часа</option></select></div><div><label class="block">Регулярно ездить</label><select name="commute_ok"><option value="">— выберите —</option><option>комфортно</option><option>допустимо</option><option>потенциальная проблема</option></select></div></div>
-<h3>Основная занятость</h3>
-<div class="grid"><div><label class="block">Занятость</label><select name="employment"><option value="">— выберите —</option><option>постоянная работа</option><option>временная / проектная работа</option><option>фриланс / самозанятость</option><option>учёба</option><option>работа + учёба</option><option>сейчас не работает</option><option>мастер НРИ</option><option>другое</option></select></div><div><label class="block">Другое</label><input name="employment_other" type="text" placeholder="Если выбрано «другое»"></div><div><label class="block">График основной занятости</label><select name="work_schedule"><option value="">— выберите —</option><option>стандартный 5/2</option><option>сменный</option><option>гибкий</option><option>плавающий / меняется каждую неделю</option><option>свободный</option><option>другое</option></select></div><div><label class="block">Другой график</label><input name="work_schedule_other" type="text" placeholder="Если выбрано «другое»"></div></div>
-<label class="block" style="margin-top:14px">Важные особенности работы или места жительства</label><textarea name="work_location_notes" placeholder="Например: удалёнка, смены, поздно заканчивает работу, далеко ехать после смены" title="Факторы работы или места жительства, которые могут влиять на регулярность"></textarea>
-<h3>Когда может водить в клубе</h3><label class="block">Дни</label><div class="choices" data-multi="days"></div><label class="block" style="margin-top:12px">Время</label><div class="choices" data-multi="time"></div>
-<h3>Насколько заранее известен график ведения?</h3><select name="schedule_notice"><option value="">— выберите —</option><option>месяц и более</option><option>2–4 недели</option><option>примерно за неделю</option><option>становится известен за несколько дней</option><option>сильно меняется / сложно прогнозировать</option></select>
-<label class="block" style="margin-top:14px">Может стабильно заранее бронировать игровые слоты</label><select name="stable_booking"><option value="">— выберите —</option><option>да</option><option>в большинстве случаев</option><option>зависит от графика</option><option>скорее нет</option></select>
-<label class="block" style="margin-top:14px">Ограничения / важные детали</label><input name="availability_details" type="text" placeholder="Например: не может по средам; нужен фиксированный график" title="Короткие ограничения по расписанию">
-<h3>Планируемая регулярность ведения</h3><select name="frequency"><option value="">— выберите —</option><option>1–2 игры в месяц</option><option>1 игра в неделю</option><option>2 игры в неделю</option><option>3+ игр в неделю</option><option>зависит от загрузки</option></select>
-<label class="block" style="margin-top:14px">Комфортная нагрузка</label><input name="comfortable_load" type="text" placeholder="Например: 1–2 игры в неделю" title="Сколько игр кандидат реально считает комфортной нагрузкой">
-<label class="block" style="margin-top:14px">Важные особенности ведения в клубе</label><textarea name="club_availability_notes" placeholder="Например: предпочитает дневные игры, готов фиксировать слоты на месяц вперёд" title="Любые организационные особенности, которые важно помнить"></textarea></section>
-<section class="card"><h2>2. Опыт в НРИ</h2><div class="grid"><div><label class="block">Играет в НРИ</label><input name="plays_since" type="text" placeholder="Например: 6 лет / с 2019 года" title="Сколько времени кандидат играет в НРИ"></div><div><label class="block">Ведёт НРИ</label><input name="gms_since" type="text" placeholder="Например: 3 года" title="Сколько времени кандидат ведёт НРИ"></div></div><h3>Насколько регулярно водит сейчас</h3><select name="gm_current"><option value="">— выберите —</option><option>регулярно</option><option>периодически</option><option>редко</option><option>давно не водил</option></select><h3>Есть опыт</h3><div class="choices" data-multi="experience"></div><h3>Постоянная аудитория</h3><div class="choices" data-multi="audience"></div><h3>Важные особенности опыта</h3><textarea name="experience_notes" placeholder="Например: много водил друзьям, впервые идёт в коммерческий клуб, хорошо работает с новичками" title="Важные детали опыта, не отражённые готовыми вариантами"></textarea></section>
-<section class="card"><h2>3. Системы</h2><h3>Чем владеет и водит на постоянной основе</h3><div class="choices" data-multi="systems"></div><label class="block" style="margin-top:12px">Другое</label><input name="other_system" type="text" placeholder="Название другой системы"><div class="grid" style="margin-top:14px"><div><label class="block">Основная система</label><input name="main_system" type="text" placeholder="Например: D&D 5e" title="Система, которую кандидат считает основной"></div><div><label class="block">Что уверенно может вести</label><input name="confident_systems" type="text" placeholder="Что может уверенно поставить в расписание" title="Системы, правила которых кандидат знает достаточно для уверенного ведения"></div><div><label class="block">Что хотел бы водить / освоить</label><input name="learn_systems" type="text" placeholder="Что хочет начать водить или изучить" title="Системы, которые пока не относятся к уверенному опыту"></div></div><h3>Важные особенности владения системами</h3><textarea name="systems_notes" placeholder="Например: уверенно ведёт, но часто сверяется с правилами; собственная система — основной опыт" title="Особенности владения системами"></textarea></section>
-<section class="card"><h2>4. Что хочет водить</h2><h3>Жанры</h3><div class="choices" data-multi="genres"></div><label class="block" style="margin-top:12px">Другой жанр</label><input name="genre_other" type="text" placeholder="Если выбрано «другое»"><h3>Формат</h3><div class="choices" data-multi="formats"></div><h3>Свои приключения или готовые модули?</h3><div class="choices" data-multi="sources"></div><label class="block" style="margin-top:12px">Другое</label><input name="source_other" type="text" placeholder="Если выбрано «другое»"><h3>Что готов поставить в расписание уже сейчас?</h3><textarea name="ready_to_schedule" placeholder="Например: D&D 5e, ваншот, тёмное фэнтези; готов провести уже на следующей неделе" title="Конкретные игры, которые кандидат реально готов поставить сейчас"></textarea><h3>Почему хочет водить в клубе?</h3><textarea name="motivation" placeholder="Например: хочет регулярную аудиторию, больше практики, команду мастеров, дополнительный доход" title="Мотивация кандидата работать именно в клубе"></textarea></section>
-<section class="card"><h2>5. Итоги первичного собеседования</h2><h3>Организационно</h3><select name="rating_org"><option value="">— выберите —</option><option>подходит</option><option>есть вопросы</option><option>не подходит</option></select><h3>Опыт работы с игроками</h3><select name="rating_experience"><option value="">— выберите —</option><option>уверенный</option><option>достаточный</option><option>небольшой, но выглядит перспективно</option><option>требует проверки</option></select><h3>Владение системой</h3><select name="rating_system"><option value="">— выберите —</option><option>уверенное</option><option>достаточное</option><option>требует проверки на игре</option></select><h3>Работа с новичками</h3><select name="rating_newbies"><option value="">— выберите —</option><option>есть хороший опыт</option><option>опыт есть</option><option>опыта мало / нет</option><option>потенциальная проблема</option></select><h3>Контакт с людьми</h3><select name="rating_contact"><option value="">— выберите —</option><option>легко устанавливает контакт</option><option>нормальная рабочая коммуникация</option><option>сдержанный</option><option>есть сложности</option></select><h3>Самопрезентация</h3><select name="rating_presentation"><option value="">— выберите —</option><option>сильная</option><option>нормальная</option><option>слабая</option><option>сложно оценить</option></select><h2 style="margin-top:26px">Что проверить на смотринах</h2><textarea name="checks_notes" placeholder="Например: тайминг, работа с новичками, уверенность в правилах, распределение спотлайта" title="Запиши только то, что действительно нужно проверить у этого кандидата"></textarea><h2 style="margin-top:26px">Решение после собеседования</h2><select name="decision"><option value="">— выберите —</option><option>приглашать на смотрины</option><option>сначала обсудить внутри команды</option><option>пока не приглашать</option></select><label class="block" style="margin-top:14px">Ключевые заметки</label><textarea name="key_notes" placeholder="Коротко: сильные стороны, риски и важные договорённости" title="Итоговые заметки по кандидату"></textarea></section>'''
-
-          pattern=r'<section class="card"><h2>Кандидат</h2>.*?</section>\s*</form>'
-          s,n=re.subn(pattern,sections+'\n</form>',s,count=1,flags=re.S)
-          if n!=1: raise SystemExit(f'form sections replacement failed: {n}')
-
-          # Remove obsolete checks option set, which no longer has a DOM target.
-          s=re.sub(r",checks:\[[^\]]*\]",'',s,count=1)
-
-          # Summary includes every free-text 'other' field and the work/location notes.
-          s=s.replace("line('Занятость',d.employment),line('График работы',d.work_schedule)","line('Занятость',d.employment),line('Другая занятость',d.employment_other),line('График работы',d.work_schedule),line('Другой график',d.work_schedule_other)")
-          s=s.replace("line('Комфортная нагрузка',d.comfortable_load),line('Ограничения / детали',d.availability_details)","line('Важные особенности работы / места жительства',d.work_location_notes),line('Комфортная нагрузка',d.comfortable_load),line('Ограничения / детали',d.availability_details)")
-          s=s.replace("line('Особенности',d.systems_notes),'\\\nПРЕДПОЧТЕНИЯ'", "line('Другая система',d.other_system),line('Особенности',d.systems_notes),'\\\nПРЕДПОЧТЕНИЯ'")
-          s=s.replace("line('Жанры',d.genres),line('Формат',d.formats),line('Приключения',d.sources)","line('Жанры',d.genres),line('Другой жанр',d.genre_other),line('Формат',d.formats),line('Приключения',d.sources),line('Другой источник',d.source_other)")
-
-          p.write_text(s,encoding='utf-8')
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('<title>Собеседования мастеров НРИ — Чертоги Героев</title>', '<title>Собеседование мастера НРИ в клуб ЧГ</title>')
+          s = s.replace('<h1>Собеседования мастеров НРИ — Чертоги Героев</h1>', '<h1>Собеседование мастера НРИ в клуб ЧГ</h1>')
+          section1 = (
+              '<section class="card"><h2>1. Доступность</h2>'
+              '<h3>Откуда добирается</h3>'
+              '<div class="grid">'
+              '<div><label class="block">Район / метро</label><input name="area" type="text" placeholder="Например: м. Петроградская / район" title="Откуда кандидат обычно будет добираться до клуба"></div>'
+              '<div><label class="block">Дорога до клуба</label><select name="commute"><option value="">— выберите —</option><option>до 30 минут</option><option>30–45 минут</option><option>45–60 минут</option><option>больше часа</option></select></div>'
+              '<div><label class="block">Регулярно ездить</label><select name="commute_ok"><option value="">— выберите —</option><option>комфортно</option><option>допустимо</option><option>потенциальная проблема</option></select></div>'
+              '</div>'
+              '<h3>Основная занятость</h3>'
+              '<div class="grid">'
+              '<div><label class="block">Занятость</label><select name="employment"><option value="">— выберите —</option><option>постоянная работа</option><option>временная / проектная работа</option><option>фриланс / самозанятость</option><option>учёба</option><option>работа + учёба</option><option>сейчас не работает</option><option>мастер НРИ</option><option>другое</option></select></div>'
+              '<div><label class="block">Другое</label><input name="employment_other" type="text" placeholder="Если выбрано «другое»"></div>'
+              '<div><label class="block">График основной занятости</label><select name="work_schedule"><option value="">— выберите —</option><option>стандартный 5/2</option><option>сменный</option><option>гибкий</option><option>плавающий / меняется каждую неделю</option><option>свободный</option><option>другое</option></select></div>'
+              '<div><label class="block">Другой график</label><input name="work_schedule_other" type="text" placeholder="Если выбрано «другое»"></div>'
+              '</div>'
+              '<h3>Важные особенности работы или места жительства</h3>'
+              '<textarea name="work_location_notes" placeholder="Например: удалёнка, смены, поздно заканчивает работу, далеко ехать после смены" title="Факторы работы или места жительства, которые могут влиять на регулярность"></textarea>'
+              '<h3>Когда может водить в клубе</h3>'
+              '<label class="block">Дни</label><div class="choices" data-multi="days"></div>'
+              '<label class="block" style="margin-top:12px">Время</label><div class="choices" data-multi="time"></div>'
+              '<h3>Насколько заранее известен график ведения?</h3>'
+              '<select name="schedule_notice"><option value="">— выберите —</option><option>месяц и более</option><option>2–4 недели</option><option>примерно за неделю</option><option>становится известен за несколько дней</option><option>сильно меняется / сложно прогнозировать</option></select>'
+              '<label class="block" style="margin-top:14px">Может стабильно заранее бронировать игровые слоты</label>'
+              '<select name="stable_booking"><option value="">— выберите —</option><option>да</option><option>в большинстве случаев</option><option>зависит от графика</option><option>скорее нет</option></select>'
+              '<label class="block" style="margin-top:14px">Ограничения / важные детали</label>'
+              '<input name="availability_details" type="text" placeholder="Например: не может по средам; нужен фиксированный график" title="Короткие ограничения по расписанию">'
+              '<h3>Планируемая регулярность ведения</h3>'
+              '<select name="frequency"><option value="">— выберите —</option><option>1–2 игры в месяц</option><option>1 игра в неделю</option><option>2 игры в неделю</option><option>3+ игр в неделю</option><option>зависит от загрузки</option></select>'
+              '<label class="block" style="margin-top:14px">Комфортная нагрузка</label>'
+              '<input name="comfortable_load" type="text" placeholder="Например: 1–2 игры в неделю" title="Сколько игр кандидат реально считает комфортной нагрузкой">'
+              '<h3>Важные особенности ведения в клубе</h3>'
+              '<textarea name="club_availability_notes" placeholder="Например: предпочитает дневные игры, готов фиксировать слоты на месяц вперёд" title="Любые организационные особенности, которые важно помнить"></textarea>'
+              '</section>'
+          )
+          s, n = re.subn(r'<section class="card"><h2>1\. Доступность</h2>.*?</section>\s*<section class="card"><h2>2\. Опыт в НРИ</h2>', section1 + '<section class="card"><h2>2. Опыт в НРИ</h2>', s, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit(f'Availability replacement failed: {n}')
+          s = s.replace('<div><label class="block">Основная занятость</label><select name="employment">', '<div><label class="block">Основная занятость</label><select name="employment">')
+          s = s.replace('<h3>Жанры</h3><div class="choices" data-multi="genres"></div><h3>Формат</h3>', '<h3>Жанры</h3><div class="choices" data-multi="genres"></div><label class="block" style="margin-top:12px">Другой жанр</label><input name="genre_other" type="text" placeholder="Если выбрано «другое»"><h3>Формат</h3>')
+          s = s.replace('<h3>Свои приключения или готовые модули?</h3><div class="choices" data-multi="sources"></div><label class="block" style="margin-top:14px">Что готов поставить', '<h3>Свои приключения или готовые модули?</h3><div class="choices" data-multi="sources"></div><label class="block" style="margin-top:12px">Другое</label><input name="source_other" type="text" placeholder="Если выбрано «другое»"><label class="block" style="margin-top:14px">Что готов поставить')
+          s = re.sub(r",checks:\[[^\]]*\]", '', s, count=1)
+          s = s.replace("line('Занятость',d.employment),line('График работы',d.work_schedule)", "line('Занятость',d.employment),line('Другая занятость',d.employment_other),line('График работы',d.work_schedule),line('Другой график',d.work_schedule_other)")
+          if "line('Важные особенности работы / места жительства',d.work_location_notes)" not in s:
+              s = s.replace("line('Комфортная нагрузка',d.comfortable_load),line('Ограничения / детали',d.availability_details)", "line('Важные особенности работы / места жительства',d.work_location_notes),line('Комфортная нагрузка',d.comfortable_load),line('Ограничения / детали',d.availability_details)")
+          s = s.replace("line('Жанры',d.genres),line('Формат',d.formats),line('Приключения',d.sources)", "line('Жанры',d.genres),line('Другой жанр',d.genre_other),line('Формат',d.formats),line('Приключения',d.sources),line('Другое',d.source_other)")
+          p.write_text(s, encoding='utf-8')
           PY
           python /tmp/patch.py
       - name: Commit strict form
